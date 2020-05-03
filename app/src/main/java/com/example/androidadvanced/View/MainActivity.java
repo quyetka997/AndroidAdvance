@@ -2,6 +2,7 @@ package com.example.androidadvanced.View;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -16,6 +17,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.example.androidadvanced.R;
 import com.example.androidadvanced.entities.Car;
@@ -33,12 +35,19 @@ import com.nostra13.universalimageloader.core.assist.ImageScaleType;
 import com.nostra13.universalimageloader.core.display.FadeInBitmapDisplayer;
 import com.nostra13.universalimageloader.core.listener.ImageLoadingListener;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     private String TAG = "QuyetKa";
     public static String BASE_URL = "https://www.reddit.com";
+    public static String BASE_LOGIN_URL = "https://www.reddit.com/api/login/";
+
     private ImageView imgView;
 
     BottomNavigationView view;
@@ -62,6 +71,47 @@ public class MainActivity extends AppCompatActivity {
         restAPI();
 
         setupImageLoader();
+        login();
+    }
+
+    private void login() {
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl(BASE_LOGIN_URL)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+
+        RedditAPI redditAPI = retrofit.create(RedditAPI.class);
+        String user = "quyetka997";
+        String password = "Anhyeuem123";
+        HashMap<String,String> headerMap = new HashMap<>();
+        headerMap.put("Content-Type", "application/json");
+        Call<ResponseBody> responseBodyCall = redditAPI.login(headerMap,user, user, password,"json");
+
+        responseBodyCall.enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                if(response.isSuccessful()) {
+                    try{
+                        String json = response.body().string();
+                        Log.d(TAG, "onResponse: json: " + json);
+                        JSONObject data = null;
+                        data = new JSONObject(json);
+                        Log.d(TAG,data.getString("success")+" "+data.get("success"));// true when login succes, false when login wrong
+                        Log.d(TAG, "onResponse: data: " + data.optString("json"));
+
+                    }catch (JSONException e){
+                        Log.e(TAG, "onResponse: JSONException: " + e.getMessage() );
+                    }catch (IOException e){
+                        Log.e(TAG, "onResponse: JSONException: " + e.getMessage() );
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Toast.makeText(getApplicationContext(), "Login Failed",Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void restAPI() {
